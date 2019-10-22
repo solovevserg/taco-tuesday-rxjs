@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <h1>Список пользователей</h1>
+    <h2>Поиск</h2>
+    <input type="search" id="search">
+    <h2>Найденные пользователи</h2>
+    <ol id="users"></ol>
+
+    <input type="range" id="range">
+    <script src="https://unpkg.com/rxjs@6.5.3/bundles/rxjs.umd.min.js"></script>
+    <script>
+        (async function main() {
+
+            const log = console.log.bind(console)
+
+            const search = document.getElementById('search');
+            const list = document.getElementById('users');
+            const range = document.getElementById('range');
+
+            const users = await fetch('http://sdal.pw/api/cdc/users', { mode: 'cors' }).then(
+                response => response.json()
+            );
+
+            function generateLi(user) {
+                const li = document.createElement('li');
+                li.textContent = `${user.name} ${user.age}`;
+                return li;
+            }
+
+            function makeRegex(query) {
+                return query.split('').map(l => `[${l.toUpperCase()}${l.toLowerCase()}]`).join('')
+            }
+
+            const inputStream = rxjs.fromEvent(search, 'input').pipe(
+                rxjs.operators.startWith(''),
+                rxjs.operators.debounceTime(250),
+                rxjs.operators.map(() => search.value),
+                rxjs.operators.distinctUntilChanged(),
+            )
+
+            const searchStream = inputStream.pipe(
+                rxjs.operators.map(query => makeRegex(query)),
+                rxjs.operators.flatMap(query => rxjs.ajax.ajax.getJSON(`http://sdal.pw/api/cdc/users?query=${query}`)),
+                rxjs.operators.tap(console.log),
+                rxjs.operators.map(users => users.map(u => generateLi(u))),
+            );
+
+            searchStream.subscribe({
+                next: lis => {
+                    list.innerHTML = '';
+                    lis.forEach(li => {
+                        list.appendChild(li);
+                    });
+                }
+            });
+
+            inputStream.pipe(
+                rxjs.operators.map(q => q.length)
+            ).subscribe(log);
+
+
+            inputStream.pipe(
+                rxjs.operators.combineLatest(rxjs.fromEvent(range, 'input').pipe(
+                    rxjs.operators.map(() => range.value)
+                )),
+            ).subscribe(val => console.log('COBINE', val));
+
+        })()
+    </script>
+</body>
+
+</html>

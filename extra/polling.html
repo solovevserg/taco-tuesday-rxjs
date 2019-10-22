@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="https://unpkg.com/rxjs@6.5.3/bundles/rxjs.umd.min.js"></script>
+    <script>
+        // method binded to instance
+        log = console.log.bind(console);
+
+        const { map, filter, repeat, delay, distinctUntilChanged, scan } = rxjs.operators;
+
+        document.body.style.fontSize = '200px';
+        rxjs.ajax.ajax.getJSON('http://sdal.pw/api/random').pipe(
+            map(v => Math.round(v * 5)),
+            delay(1000),
+            repeat(),
+            distinctUntilChanged(),
+            scan((acc, value) => acc + value),
+        ).subscribe(value => document.body.textContent = value)
+    </script>
+</body>
+
+</html>
